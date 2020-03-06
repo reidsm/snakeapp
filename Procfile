@@ -1,1 +1,1 @@
-web: java $JAVA_OPTS -cp target/classes:target/dependency/* Snake
+web: java -cp target/classes/:target/dependency/* com.Battle.Snake
