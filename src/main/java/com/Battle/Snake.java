@@ -8,6 +8,7 @@ import spark.Response;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import static spark.Spark.port;
 import static spark.Spark.post;
@@ -29,11 +30,11 @@ public class Snake {
      * @param args are ignored.
      */
     public static void main(String[] args) {
-        String port = System.getProperty("PORT");
+        String port = System.getenv("PORT");
         if (port != null) {
             LOG.info("Found system provided port: {}", port);
         } else {
-            LOG.info("Using default port: {}", port);
+            LOG.info("Using default port: " +  port);
             port = "8080";
         }
         port(Integer.parseInt(port));
@@ -117,8 +118,19 @@ public class Snake {
          * @return a response back to the engine containing snake movement values.
          */
         public Map<String, String> move(JsonNode moveRequest) {
+        	System.out.println("THE BOARD STATE IS: " + moveRequest);
             Map<String, String> response = new HashMap<>();
-            response.put("move", "right");
+            Random rand = new Random();
+            int choiceMaker = rand.nextInt(3);
+            if(choiceMaker == 0) {
+            	response.put("move", "right");
+            } else if(choiceMaker == 1) {
+            	response.put("move", "left");
+            } else if(choiceMaker == 2) {
+            	response.put("move", "up");
+            } else {
+            	response.put("move", "down");
+            }
             return response;
         }
 
