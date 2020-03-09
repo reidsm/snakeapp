@@ -108,7 +108,7 @@ public:
 			if((body.at(i).x== bodyPart.x)&& (body.at(i).y == bodyPart.y))
 				return { body.at(i - 1).x - body.at(i).x,body.at(i - 1).y - body.at(i).y };
 		}
-		
+
 		//ERROR
 		throw ERROR;
 		return { 0,0 };
@@ -228,7 +228,7 @@ public:
 
 	bool isEndOfTail(int2d location)
 	{
-		int2d endOfTail = body.at(body.size() - 1);
+		int2d endOfTail =  .at(body.size() - 1);
 		return ((endOfTail.x == location.x) && (endOfTail.y == location.y));
 	}
 
