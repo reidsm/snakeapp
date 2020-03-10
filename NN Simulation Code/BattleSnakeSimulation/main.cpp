@@ -79,13 +79,13 @@ void loadBoardStateIntoInputNodes(int player)
 				if (foodVector.at(i)->isAtPosition(cBL))
 				{
 					//0011000	Food
-					inputVals.push_back(0);
-					inputVals.push_back(0);
-					inputVals.push_back(1);
-					inputVals.push_back(1);
-					inputVals.push_back(0);
-					inputVals.push_back(0);
-					inputVals.push_back(0);
+					inputVals.push_back(-1.0);
+					inputVals.push_back(-1.0);
+					inputVals.push_back(1.0);
+					inputVals.push_back(1.0);
+					inputVals.push_back(-1.0);
+					inputVals.push_back(-1.0);
+					inputVals.push_back(-1.0);
 					inputPushed = true;
 					break;
 				}
@@ -99,8 +99,11 @@ void loadBoardStateIntoInputNodes(int player)
 					//get the player number of the snake
 					//xxxx%%%	Player Number
 					double player4bit = i / 4;
+					player4bit = player4bit / 2.0 - 1.0;
 					double player2bit = (i & 2) / 2;
+					player2bit = player2bit / 2.0 - 1.0;
 					double player1bit = i % 2;
+					player1bit = player1bit / 2.0 - 1.0;
 
 					//0100xxx	Head
 					//10xxxxx	Tail
@@ -126,49 +129,49 @@ void loadBoardStateIntoInputNodes(int player)
 						if (bodyDirection.x == 1)
 						{
 							//xx11xxx	Body Moving Right
-							bodyMoving2b = 1;
-							bodyMoving1b = 1;
+							bodyMoving2b = 1.0;
+							bodyMoving1b = 1.0;
 						}
 						else if (bodyDirection.x == -1)
 						{
 							//xx10xxx	Body Moving Left
-							bodyMoving2b = 1;
-							bodyMoving1b = 0;
+							bodyMoving2b = 1.0;
+							bodyMoving1b = -1.0;
 						}
 						else if (bodyDirection.y == 1)
 						{
 							//xx00xxx	Body Moving Down
-							bodyMoving2b = 0;
-							bodyMoving1b = 0;
+							bodyMoving2b = -1.0;
+							bodyMoving1b = -1.0;
 						}
 						else
 						{
 							//xx01xxx	Body Moving Up
-							bodyMoving2b = 0;
-							bodyMoving1b = 1;
+							bodyMoving2b = -1.0;
+							bodyMoving1b = 1.0;
 						}
 
 						//determine if this tile holds a tail or a normal body part
 						if (snakes.at(player)->at(i)->isEndOfTail(cBL))
 						{
 							//10xxxxx	Tail
-							special2b = 1;
-							special1b = 0;
+							special2b = 1.0;
+							special1b = -1.0;
 						}
 						else
 						{
 							//00		Body Part
-							special2b = 1;
-							special1b = 1;
+							special2b = 1.0;
+							special1b = 1.0;
 						}
 					}
 					else if (snakePart == 2)
 					{
 						//0100xxx	Head
-						special2b = 0;
-						special1b = 1;
-						bodyMoving2b = 0;
-						bodyMoving1b = 0;
+						special2b = -1.0;
+						special1b = 1.0;
+						bodyMoving2b = -1.0;
+						bodyMoving1b = -1.0;
 					}
 
 					//a snake was found
@@ -190,13 +193,13 @@ void loadBoardStateIntoInputNodes(int player)
 			{
 				//nothing is found so the tile must be blank
 				//0000000	Blank
-				inputVals.push_back(0);
-				inputVals.push_back(0);
-				inputVals.push_back(0);
-				inputVals.push_back(0);
-				inputVals.push_back(0);
-				inputVals.push_back(0);
-				inputVals.push_back(0);
+				inputVals.push_back(-1.0);
+				inputVals.push_back(-1.0);
+				inputVals.push_back(-1.0);
+				inputVals.push_back(-1.0);
+				inputVals.push_back(-1.0);
+				inputVals.push_back(-1.0);
+				inputVals.push_back(-1.0);
 			}
 		}
 	}
@@ -210,23 +213,29 @@ void loadBoardStateIntoInputNodes(int player)
 	{
 		int currentFood = snakes.at(player)->at(f)->getInsideFood();
 		if(currentFood>0)
-			inputVals.push_back(1);
+			inputVals.push_back(1.0);
 		else
-			inputVals.push_back(0);
+			inputVals.push_back(-1.0);
 	}
 	for(;f< maxPlayers;f++)
-		inputVals.push_back(0);
+		inputVals.push_back(-1.0);
 	
 	//6bits for each player		the size of each player's snake
 	for (f = 0; f < snakes.at(player)->size(); f++)
 	{
 		int currentSize = snakes.at(player)->at(f)->getBodyLength();
 		double sizeB32 = (currentSize & 32) / 32;
+		sizeB32 = sizeB32 * 2.0 - 1.0;
 		double sizeB16 = (currentSize & 16) / 16;
+		sizeB16 = sizeB32 * 2.0 - 1.0;
 		double sizeB08 = (currentSize & 8) / 8;
+		sizeB08 = sizeB08 * 2.0 - 1.0;
 		double sizeB04 = (currentSize & 4) / 4;
+		sizeB04 = sizeB04 * 2.0 - 1.0;
 		double sizeB02 = (currentSize & 2) / 2;
+		sizeB02 = sizeB02 * 2.0 - 1.0;
 		double sizeB01 = (currentSize & 1) / 1;
+		sizeB01 = sizeB01 * 2.0 - 1.0;
 
 		inputVals.push_back(sizeB32);
 		inputVals.push_back(sizeB16);
@@ -237,28 +246,29 @@ void loadBoardStateIntoInputNodes(int player)
 	}
 	for (; f < maxPlayers; f++)
 	{
-		inputVals.push_back(0);
-		inputVals.push_back(0);
-		inputVals.push_back(0);
-		inputVals.push_back(0);
-		inputVals.push_back(0);
-		inputVals.push_back(0);
+		inputVals.push_back(-1.0);
+		inputVals.push_back(-1.0);
+		inputVals.push_back(-1.0);
+		inputVals.push_back(-1.0);
+		inputVals.push_back(-1.0);
+		inputVals.push_back(-1.0);
 	}
 
 	//1 bit for each player for their hunger level
 	for (f = 0; f < snakes.at(player)->size(); f++)
 	{
 		double curHungerPercent =((double) snakes.at(player)->at(0)->getHunger()) / ((double)maxHunger);
+		curHungerPercent = curHungerPercent * 2.0 - 1.0;
 		inputVals.push_back(curHungerPercent);
 	}
 	for (; f < maxPlayers; f++)
-		inputVals.push_back(0);
+		inputVals.push_back(-1.0);
 	
 	//1 bit for each player		if their snake exists
 	for (f = 0; f < snakes.at(player)->size(); f++)
-			inputVals.push_back(1);
+			inputVals.push_back(1.0);
 	for (; f < maxPlayers; f++)
-		inputVals.push_back(0);
+		inputVals.push_back(-1.0);
 }
 
 
@@ -479,17 +489,14 @@ int main()
 			if (rd() <= risk)
 			{
 				//add up all positive outputs
-				double totalOutput = 0.0;
-				totalOutput += outputVals.at(0) > 0.0 ? outputVals.at(0) : 0.0;
-				totalOutput += outputVals.at(1) > 0.0 ? outputVals.at(1) : 0.0;
-				totalOutput += outputVals.at(2) > 0.0 ? outputVals.at(2) : 0.0;
+				double totalOutput = outputVals.at(0) + outputVals.at(1) + outputVals.at(2) + 3.0;
 				double randomPick = rd() * totalOutput;
 				
 				//randomize our moves
-				if (randomPick < outputVals.at(0))
+				if (randomPick < outputVals.at(0) + 1.0)
 					//move left selected
 					moveSelected = -1;
-				else if (randomPick < outputVals.at(0) + outputVals.at(1))
+				else if (randomPick < outputVals.at(0) + outputVals.at(1) + 2.0)
 					//move straight selected
 					moveSelected = 0;
 				else
@@ -565,7 +572,7 @@ int main()
 					if (snakes.at(i)->at(0)->lastMove + 1 == f)
 					{
 						snakeQNet->m_layers.back().at(f).setOutputVal(snakes.at(i)->at(0)->lastOutputValues.at(f));
-						qMapPunishment.push_back(0.0);
+						qMapPunishment.push_back(-1.0);
 					}
 					else
 					{
