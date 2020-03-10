@@ -122,15 +122,22 @@ public:
 
 		for (int i = 0;i<rewards.size();i++)
 		{
+			//change the range
+			rewards.at(i) = (rewards.at(i) + 1.0) / 2.0;
+			//convert for multiplication
 			rewards.at(i) = 1.0 - rewards.at(i);
 		}
 
 		for (int i = 0; i < rewards.size(); i++)
 		{
+			//combine them all
 			rewardTotal *= rewards.at(i);
 		}
 
+		//convert
 		rewardTotal = 1.0 - rewardTotal;
+		//change the range back
+		rewardTotal = rewardTotal * 2.0 - 1.0;
 		rewards.clear();
 
 		return rewardTotal;
@@ -470,7 +477,11 @@ public:
 ////////////////////
 double blend2Numbers(double n1, double n2)
 {
-	return 1 - (1 - n1) * (1 - n2);
+	double tn1 = (n1 + 1.0) / 2.0;
+	double tn2 = (n2 + 1.0) / 2.0;
+	double blend = 1 - (1 - tn1) * (1 - tn2);
+	double adjustBack = blend * 2.0 + 1.0;
+	return adjustBack;
 }
 
 void drawBoard()
