@@ -1,12 +1,12 @@
 #pragma once
 
-
-
 #include <iostream>
 #include <vector>
 #include <ctime>
 #include <Windows.h>
-//#include "NN.h"
+#include <algorithm>
+//#include <string>
+
 
 using namespace std;
 
@@ -18,6 +18,7 @@ struct int2d {
 	int x;
 	int y;
 };
+
 
 ////////////////////
 //forward declarations
@@ -31,26 +32,23 @@ bool isSpotTaken(int2d location);
 ////////////////////
 //globals
 ////////////////////
-int2d boardSize;
-vector<Snake*> snakes;
-vector<Snake*> enemySnakes;
-Snake* playerSnake;
+const int2d boardSize = {11,11};
+vector<vector<Snake*>*> snakes;
 vector<Food*> foodVector;
 const int maxPlayers = 8;
-int players = 8;
+const int startingPlayerCount = 8;
 int2d spawnPositions[maxPlayers];
 HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-
 
 
 ////////////////////
 //classes
 ////////////////////
-
 class Food {
 private:
 	int2d position;
 	bool justEaten;
+
 
 public:
 	Food(int2d startPosition)
@@ -76,30 +74,134 @@ public:
 
 };
 
+
 class Snake {
 private:
 	vector<int2d> body;
 	int insideFood;
-	int2d previousMove;
-	bool isAI;
+	int2d lastMoveDirection;
 	bool firstMove;
 	int size;
+	bool aboutToDie;
+	
 
 public:
-	Snake(int2d spawn, bool aiControlled) {
-		//cout << "Snake Created" << endl;
+	vector<double> lastOutputValues;
+	int lastMove;
+
+public:
+	Snake(int2d spawn) {
 		body.push_back(spawn);
 		insideFood = 2;
 		size = 3;
-		previousMove = { 1,0 };
-		isAI = aiControlled;
+		lastMoveDirection = { 1,0 };
 		firstMove = true;
+		aboutToDie = false;
 	}
 
-	~Snake()
+
+
+	int2d rotationMoveToDirection(int rotation)
 	{
-		//cout << "Snake Destroyed" << endl;
+		//last move we were going right
+		if ((lastMoveDirection.x == 1) && (lastMoveDirection.y == 0))
+		{
+			//rotation = -1		turn left
+			if (rotation == -1)
+				return { 0,-1 };
+			//rotation =  0		go straight
+			if (rotation == 0)
+				return { 1,0 };
+			//rotation =  1		turn right
+			if (rotation == 1)
+				return { 0,1 };
+		}
+		//last move we were going left
+		if ((lastMoveDirection.x == -1) && (lastMoveDirection.y == 0))
+		{
+			//rotation = -1		turn left
+			if (rotation == -1)
+				return { 0,1 };
+			//rotation =  0		go straight
+			if (rotation == 0)
+				return { -1,0 };
+			//rotation =  1		turn right
+			if (rotation == 1)
+				return { 0,-1 };
+		}
+		//last move we were going up
+		if ((lastMoveDirection.x == 0) && (lastMoveDirection.y == -1))
+		{
+			//rotation = -1		turn left
+			if (rotation == -1)
+				return { -1,0 };
+			//rotation =  0		go straight
+			if (rotation == 0)
+				return { 0,-1 };
+			//rotation =  1		turn right
+			if (rotation == 1)
+				return { 1,0 };
+		}
+		//last move we were going down
+		if ((lastMoveDirection.x == 0) && (lastMoveDirection.y == 1))
+		{
+			//rotation = -1		turn left
+			if (rotation == -1)
+				return { 1,0 };
+			//rotation =  0		go straight
+			if (rotation == 0)
+				return { 0,1 };
+			//rotation =  1		turn right
+			if (rotation == 1)
+				return { -1,0 };
+		}
+
+		throw ERROR;
 	}
+
+
+	bool isAboutToDie()
+	{
+		return aboutToDie;
+	}
+
+
+	bool killUpdate()
+	{
+		//clean up all of the vectors and delete the snake object
+		if (aboutToDie)
+		{
+			for (int i = 0; i < snakes.size(); i++)
+			{
+				if (snakes.at(i)->at(0) == this)
+				{
+					//we found this snake's main vector
+					snakes.at(i)->clear();
+					delete snakes.at(i);
+					snakes.erase(snakes.begin() + i);
+					i--;
+				}
+				else
+				{
+					//this is some other snake's main vector
+					for (int f = 1; f < snakes.at(i)->size(); f++)
+					{
+						if (snakes.at(i)->at(f) == this)
+						{
+							snakes.at(i)->erase(snakes.at(i)->begin() + f);
+							break;
+						}
+					}
+				}
+			}
+
+			delete this;
+			return true;
+		}
+
+		return false;
+	}
+
 
 	int2d bodyDirection(int2d bodyPart)
 	{
@@ -108,23 +210,24 @@ public:
 			if((body.at(i).x== bodyPart.x)&& (body.at(i).y == bodyPart.y))
 				return { body.at(i - 1).x - body.at(i).x,body.at(i - 1).y - body.at(i).y };
 		}
-
+		
 		//ERROR
 		throw ERROR;
 		return { 0,0 };
 	}
 
+
 	void move(int2d offset)
 	{
 		//check if the snake is trying to move backwards
-		if ((offset.x == -previousMove.x) && (offset.y == -previousMove.y) && (!firstMove))
+		if ((offset.x == -lastMoveDirection.x) && (offset.y == -lastMoveDirection.y) && (!firstMove))
 		{
-			offset = previousMove;
+			offset = lastMoveDirection;
 		}
 		firstMove = false;
 
 		//keep track of this move
-		previousMove = offset;
+		lastMoveDirection = offset;
 
 		//move the snake forward with the tail following
 		int2d previousLocation;
@@ -144,6 +247,13 @@ public:
 		}
 	}
 
+
+	int getInsideFood()
+	{
+		return insideFood;
+	}
+
+
 	void eatFood()
 	{
 		int2d newHeadPosition = body.at(0);
@@ -158,139 +268,93 @@ public:
 		}
 	}
 
-	void collisionPlayer()
+
+	void setToDie()
 	{
-		for (unsigned int i = 0; i < snakes.size(); i++)
+		aboutToDie = true;
+	}
+
+
+	int findSnakeVector()
+	{
+		for (int i = 0; i < snakes.size(); i++)
 		{
-			if (collisionCheck(snakes.at(i)))
+			if (snakes.at(i)->at(0) == this)
 			{
-				//we lost the collision with an enemy
-				for (unsigned int f = 0; f < snakes.size(); f++)
-					if (snakes.at(f) == this)
-					{
-						snakes.erase(snakes.begin() + f);
-						break;
-					}
-
-				playerSnake = NULL;
-
-				delete this;
-				break;
+				return i;
 			}
 		}
+		throw ERROR;
 	}
 
-	void movePlayer(int2d offset)
-	{
-		move(offset);
-	}
 
-	void moveAI()
-	{
-		//don't hit walls
-		if ((previousMove.x == 1) && (body.at(0).x >= boardSize.x - 2))
-			move({ 0,1 });
-		else if ((previousMove.y == 1) && (body.at(0).y >= boardSize.y - 2))
-			move({ -1,0 });
-		else if ((previousMove.x == -1) && (body.at(0).x <= 1))
-			move({ 0,-1 });
-		else if ((previousMove.y == -1) && (body.at(0).y <= 1))
-			move({ 1,0 });
-		else
-			move(previousMove);
-	}
-
-	void collisionAI()
-	{
-		for (unsigned int i = 0; i < snakes.size(); i++)
-		{
-			if (collisionCheck(snakes.at(i)))
-			{
-				//we lost the collision with a snake
-				for (unsigned int f = 0; f < snakes.size(); f++)
-					if (snakes.at(f) == this)
-					{
-						snakes.erase(snakes.begin() + f);
-						break;
-					}
-				for (unsigned int f = 0; f < enemySnakes.size(); f++)
-					if (enemySnakes.at(f) == this)
-					{
-						enemySnakes.erase(enemySnakes.begin() + f);
-						break;
-					}
-
-				delete this;
-				break;
-			}
-		}
-	}
-
-	bool isEndOfTail(int2d location)
-	{
-		int2d endOfTail =  .at(body.size() - 1);
-		return ((endOfTail.x == location.x) && (endOfTail.y == location.y));
-	}
-
-	//return true if the main snake should die
-	bool collisionCheck(Snake* collisionSnake)
+	void collisionUpdate()
 	{
 		int2d headLocation = body.at(0);
 		//check for wall collision
-		if ((headLocation.x < 0) || (headLocation.x > boardSize.x-1) || (headLocation.y < 0) || (headLocation.y > boardSize.y-1))
-			return 1;
-
-		int collisionType = collisionSnake->bodyPartAtLocation(headLocation);
-		//head on head collision
-		if ((collisionType == 2) && (this != collisionSnake))
+		if ((headLocation.x < 0) || (headLocation.x > boardSize.x - 1) || (headLocation.y < 0) || (headLocation.y > boardSize.y - 1))
 		{
-			int collisionSnakeLength = collisionSnake->getBodyLength();
-			if (getBodyLength() < collisionSnakeLength)
-				return true;
-			else
+			setToDie();
+			return;
+		}
+
+		int playerNumber = findSnakeVector();
+
+		for (int g = 0; g < snakes.at(playerNumber)->size(); g++)
+		{
+			Snake* collisionSnake = snakes.at(playerNumber)->at(g);
+
+			int collisionType = collisionSnake->bodyPartAtLocation(headLocation);
+			//head on head collision
+			if ((collisionType == 2) && (this != collisionSnake))
 			{
-				//remove it the collision snake from the vector lists
-				//find out if its the player
-				if (playerSnake == collisionSnake)
-					playerSnake = NULL;
+				int collisionSnakeLength = collisionSnake->getBodyLength();
+				if (getBodyLength() < collisionSnakeLength)
+				{
+					setToDie();
+					return;
+				}
 				else
-					for (unsigned int i = 0; i < enemySnakes.size(); i++)
-						if (enemySnakes.at(i) == collisionSnake)
-						{
-							enemySnakes.erase(enemySnakes.begin() + i);
-							break;
-						}
-				for (unsigned int i = 0; i < snakes.size(); i++)
-					if (snakes.at(i) == collisionSnake)
+				{
+					//collision snake lost
+					collisionSnake->setToDie();
+
+					//if they are both the same size they both die
+					if (getBodyLength() == collisionSnakeLength)
 					{
-						snakes.erase(snakes.begin() + i);
-						break;
+						setToDie();
 					}
-
-				delete collisionSnake;
-
-				//if they are both the same size they both die
-				if (getBodyLength() == collisionSnakeLength)
-					return true;
-				else
-					return false;
+					return;
+				}
 			}
-		}
-		//head to body collision
-		else if (collisionType == 1)
-			return true;
-		//self collision
-		else if (collisionType == 2)
-		{
-			for (unsigned int i = 1; i < body.size(); i++)
+			//head to body collision
+			else if (collisionType == 1)
 			{
-				if ((headLocation.x == body.at(i).x) && (headLocation.y == body.at(i).y))
-					return true;
+				setToDie();
+				return;
+			}
+			//self collision
+			else if (collisionType == 2)
+			{
+				for (unsigned int i = 1; i < body.size(); i++)
+				{
+					if ((headLocation.x == body.at(i).x) && (headLocation.y == body.at(i).y))
+					{
+						setToDie();
+						return;
+					}
+				}
 			}
 		}
-
-		return false;
 	}
+
+
+	bool isEndOfTail(int2d location)
+	{
+		int2d endOfTail = body.at(body.size() - 1);
+		return ((endOfTail.x == location.x) && (endOfTail.y == location.y));
+	}
+
 
 	//return 0		nothing here
 	//return 1		body here
@@ -313,15 +377,12 @@ public:
 		return 0;
 	}
 
+
 	int getBodyLength()
 	{
 		return size;
 	}
 
-	bool getAIStatus()
-	{
-		return isAI;
-	}
 };
 
 
@@ -344,25 +405,24 @@ void drawBoard()
 			else
 			{
 				bool spotTaken = false;
-				for (unsigned int i = 0; i < snakes.size(); i++)
+				if (snakes.size() > 0)
 				{
-					if (snakes.at(i)->getAIStatus())
-						SetConsoleTextAttribute(hConsole, 4);
-					else
+					for (unsigned int i = 0; i < snakes.at(0)->size(); i++)
+					{
 						SetConsoleTextAttribute(hConsole, 2);
-
-					int snakeBodyPart = snakes.at(i)->bodyPartAtLocation({ x,y });
-					if (snakeBodyPart == 2)
-					{
-						spotTaken = true;
-						cout << "@";
-						break;
-					}
-					else if (snakeBodyPart == 1)
-					{
-						spotTaken = true;
-						cout << "O";
-						break;
+						int snakeBodyPart = snakes.at(0)->at(i)->bodyPartAtLocation({ x,y });
+						if (snakeBodyPart == 2)
+						{
+							spotTaken = true;
+							cout << "@";
+							break;
+						}
+						else if (snakeBodyPart == 1)
+						{
+							spotTaken = true;
+							cout << "O";
+							break;
+						}
 					}
 				}
 				for (unsigned int i = 0; i < foodVector.size(); i++)
@@ -414,44 +474,71 @@ void randomlyCreateFood(int chance)
 	}
 }
 
-void createRandomSnakes()
+void createRandomSnakes(int count)
 {
+	Snake* newSnakes[maxPlayers];
+	//random_shuffle(std::begin(test), std::end(test));
 	int newSpawn;
 	int2d newSpawnPosition;
 	bool spotTaken;
-	Snake* enemySnake;
 
-	newSpawn = rand() % maxPlayers;
-	playerSnake = new Snake(spawnPositions[newSpawn], false);
-	snakes.push_back(playerSnake);
-
-	for (int i = 0; i < players - 1; i++)
+	//switch up the spawn positions
+	random_shuffle(std::begin(spawnPositions), std::end(spawnPositions));
+	for (int i = 0; i < count; i++)
 	{
-		spotTaken = true;
-		while (spotTaken)
+		//create snakes in each spawn position on the map
+		newSnakes[i] = new Snake(spawnPositions[i]);
+		//make a new vector for each snake
+		snakes.push_back(new vector<Snake*>);
+		//load in the master for each snake vector
+		snakes.at(i)->push_back(newSnakes[i]);
+	}
+
+	//add the rest of the snakes to each snake vector
+	for (int i = 0; i < count; i++)
+	{
+		random_shuffle(std::begin(newSnakes), std::begin(newSnakes)+count);
+		for (int f = 0; f < count; f++)
 		{
-			newSpawn = rand() % maxPlayers;
-			newSpawnPosition = spawnPositions[newSpawn];
-			spotTaken = isSpotTaken(newSpawnPosition);
-			if (!spotTaken)
+			if (snakes.at(i)->at(0) != newSnakes[f])
 			{
-				enemySnake = new Snake(newSpawnPosition, true);
-				enemySnakes.push_back(enemySnake);
-				snakes.push_back(enemySnake);
+				snakes.at(i)->push_back(newSnakes[f]);
 			}
 		}
 	}
 }
 
+void clearTheBoard()
+{
+	//clear all of the food
+	for (int i = 0; i < foodVector.size(); i++)
+	{
+		delete foodVector.at(i);
+	} 
+	foodVector.clear();
+
+	//clear all of the snakes
+	for (int i = 0; i < snakes.size(); i++)
+	{
+		delete snakes.at(i)->at(0);
+		snakes.at(i)->clear();
+
+		delete snakes.at(i);
+	}
+	snakes.clear();
+}
+
+
 bool isSpotTaken(int2d location)
 {
-	for (unsigned int i = 0; i < snakes.size(); i++)
-	{
-		if (snakes.at(i)->bodyPartAtLocation(location))
+	if(snakes.size()>0)
+		for (unsigned int i = 0; i < snakes.size(); i++)
 		{
-			return true;
+			if (snakes.at(0)->at(i)->bodyPartAtLocation(location))
+			{
+				return true;
+			}
 		}
-	}
 	for (unsigned int i = 0; i < foodVector.size(); i++)
 	{
 		if (foodVector.at(i)->isAtPosition(location))
@@ -462,12 +549,7 @@ bool isSpotTaken(int2d location)
 	return false;
 }
 
-void updateAI()
-{
-	for (unsigned int i = 0; i < enemySnakes.size(); i++)
-		enemySnakes.at(i)->moveAI();
-}
-
+/*
 void updatePlayer()
 {
 	if (playerSnake == NULL)
@@ -490,6 +572,7 @@ void updatePlayer()
 		playerSnake->movePlayer({ 0,1 });
 	}
 }
+*/
 
 void removeAllEatenFood()
 {
@@ -505,23 +588,35 @@ void removeAllEatenFood()
 	}
 }
 
+
+void deathUpdate()
+{
+	if (snakes.size() > 0)
+		for (unsigned int i = 0; i < snakes.size(); i++)
+		{
+			if (snakes.at(i)->at(0)->killUpdate())
+				i--;
+		}
+}
+
+
 void eatFoodUpdate()
 {
-	for (unsigned int i = 0; i < snakes.size(); i++)
+	if(snakes.size()>0)
+	for (unsigned int i = 0; i < snakes.at(0)->size(); i++)
 	{
-		snakes.at(i)->eatFood();
+		snakes.at(0)->at(i)->eatFood();
 	}
 }
 
 
 void updateCollisions()
 {
-	if (playerSnake != NULL)
-		playerSnake->collisionPlayer();
-	for (unsigned int i = 0; i < enemySnakes.size(); i++)
-	{
-		enemySnakes.at(i)->collisionAI();
-	}
+	if (snakes.size() > 0)
+		for (unsigned int i = 0; i < snakes.at(0)->size(); i++)
+		{
+			snakes.at(0)->at(i)->collisionUpdate();
+		}
 }
 
 void SetSpawn()

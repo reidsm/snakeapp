@@ -99,7 +99,7 @@ private:
 	static double alpha;
 	static double transferFunction(double x);
 	static double transferFunctionDerivative(double x);
-	static double randomWeight(void) { return (rand() / double(RAND_MAX)); }
+	static double randomWeight(void) { return (rand() / double(RAND_MAX))/200.0; }
 	double sumDOW(const Layer& nextLayer) const;
 	double m_outputVal;
 	vector<Connection> m_outputWeights;
@@ -171,10 +171,12 @@ public:
 	double getRecentAverageError(void) const { return m_recentAverageError; }
 
 private:
-	vector<Layer> m_layers;
 	double m_error;
 	double m_recentAverageError;
 	static double m_recentAverageSmoothingFactor;
+
+public:
+	vector<Layer> m_layers;
 };
 
 double Net::m_recentAverageSmoothingFactor = 100.0;

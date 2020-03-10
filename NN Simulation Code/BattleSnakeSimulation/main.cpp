@@ -1,23 +1,23 @@
 /**
 	TODO:
-
+	
 
 **/
 
-//#include <iostream>
-//#include <vector>
-//#include <ctime>
-//#include <Windows.h>
 #include "NN.h"
 #include "Snake.h"
-
-//using namespace std;
-
+#include <cstdlib>
+#include <functional>
+#include <random>
 
 
 //our snakes NN
 vector<unsigned> snakeQNetTopology;
-Net* snakeQNet;//(snakeQNetTopology);
+Net* snakeQNet;
+vector<double> inputVals;
+double future = 0.95;
+double risk = 0.3;
+double riskDecay = 0.999;
 
 
 ////////////////////
@@ -60,10 +60,11 @@ void setUpSnakeNN()
 	snakeQNetTopology.push_back(outputLayerNodeCount);
 	snakeQNet = new Net(snakeQNetTopology);
 }
-vector<double> inputVals;
+
+
 void loadBoardStateIntoInputNodes(int player)
 {
-	//vector<double> inputVals;
+	inputVals.clear();
 	
 	//loop through all of the board locations
 	int2d cBL;
@@ -93,7 +94,7 @@ void loadBoardStateIntoInputNodes(int player)
 			if (!inputPushed)
 			{
 				//check for snakes
-				for (unsigned int i = 0; i < snakes.size(); i++)
+				for (unsigned int i = 0; i < snakes.at(player)->size(); i++)
 				{
 					//get the player number of the snake
 					//xxxx%%%	Player Number
@@ -113,11 +114,11 @@ void loadBoardStateIntoInputNodes(int player)
 					double bodyMoving1b;
 
 					//get the body part of the snake at this board location
-					int snakePart = snakes.at(i)->bodyPartAtLocation(cBL);
+					int snakePart = snakes.at(player)->at(i)->bodyPartAtLocation(cBL);
 
 					if (snakePart == 1)
 					{
-						int2d bodyDirection = snakes.at(i)->bodyDirection(cBL);
+						int2d bodyDirection = snakes.at(player)->at(i)->bodyDirection(cBL);
 						//xx00xxx	Body Moving Down
 						//xx01xxx	Body Moving Up
 						//xx10xxx	Body Moving Left
@@ -148,7 +149,7 @@ void loadBoardStateIntoInputNodes(int player)
 						}
 
 						//determine if this tile holds a tail or a normal body part
-						if (snakes.at(i)->isEndOfTail(cBL))
+						if (snakes.at(player)->at(i)->isEndOfTail(cBL))
 						{
 							//10xxxxx	Tail
 							special2b = 1;
@@ -199,11 +200,57 @@ void loadBoardStateIntoInputNodes(int player)
 			}
 		}
 	}
+
+	////////
+	//Special Info
+	////////
+	//1bit for each player		if their snake will grow next move
+	unsigned int f;
+	for (f = 0; f < snakes.at(player)->size(); f++)
+	{
+		int currentFood = snakes.at(player)->at(f)->getInsideFood();
+		if(currentFood>0)
+			inputVals.push_back(1);
+		else
+			inputVals.push_back(0);
+	}
+	for(;f< maxPlayers;f++)
+		inputVals.push_back(0);
+	
+	//6bits for each player		the size of each player's snake
+	for (f = 0; f < snakes.at(player)->size(); f++)
+	{
+		int currentSize = snakes.at(player)->at(f)->getBodyLength();
+		double sizeB32 = (currentSize & 32) / 32;
+		double sizeB16 = (currentSize & 16) / 16;
+		double sizeB08 = (currentSize & 8) / 8;
+		double sizeB04 = (currentSize & 4) / 4;
+		double sizeB02 = (currentSize & 2) / 2;
+		double sizeB01 = (currentSize & 1) / 1;
+
+		inputVals.push_back(sizeB32);
+		inputVals.push_back(sizeB16);
+		inputVals.push_back(sizeB08);
+		inputVals.push_back(sizeB04);
+		inputVals.push_back(sizeB02);
+		inputVals.push_back(sizeB01);
+	}
+	for (; f < maxPlayers; f++)
+	{
+		inputVals.push_back(0);
+		inputVals.push_back(0);
+		inputVals.push_back(0);
+		inputVals.push_back(0);
+		inputVals.push_back(0);
+		inputVals.push_back(0);
+	}
+	
+	//1 bit for each player		if their snake exists
+	for (f = 0; f < snakes.at(player)->size(); f++)
+			inputVals.push_back(1);
+	for (; f < maxPlayers; f++)
+		inputVals.push_back(0);
 }
-
-
-
-
 
 
 //0000000	Blank
@@ -228,7 +275,7 @@ void convertTest()
 		{
 			for (int i = 0; i < 7; i++)
 			{
-				current[i] = inputVals.at(y*11*7 + x * 7 + i);
+				current[i] = inputVals.at((y*11*7 + x * 7 + i));
 			}
 
 			if ((current[0] == 0) && (current[1] == 0) && (current[2] == 1) && (current[3] == 1))
@@ -270,19 +317,24 @@ void convertTest()
 }
 
 
+/*class Rand_double
+{
+public:
+	Rand_double(double low, double high)
+		:r(std::bind(std::uniform_real_distribution<>(low, high), std::default_random_engine())) {}
 
+	double operator()() { return r(); }
 
+private:
+	std::function<double()> r;
+};*/
 
+double rd()
+{
+	int temp = rand() % 1000;
+	return ((double)temp) / 1000.0;
 
-
-
-
-/*vector<double> inputVals;
-vector<double> resultVals;
-vector<double> targetVals;
-snakeQNet.feedForward(inputVals);
-snakeQNet.getResults(resultVals);
-snakeQNet.backProp(targetVals);*/
+}
 
 
 ////////////////////
@@ -291,8 +343,8 @@ snakeQNet.backProp(targetVals);*/
 int main()
 {
 	srand((unsigned)time(NULL));
-	boardSize.x = 11;
-	boardSize.y = 11;
+	//Rand_double rd{ 0.0,1.0 };
+
 
 	/*
 	vector<unsigned> snakeQNetTopology;
@@ -311,26 +363,172 @@ int main()
 
 	
 	SetSpawn();
-	createRandomSnakes();
+	createRandomSnakes(startingPlayerCount);
 
-	for (int i = 0; i < players; i++)
+	for (int i = 0; i < startingPlayerCount; i++)
 		randomlyCreateFood(100);
 
-	drawBoard();
+	//setup the NN
 	setUpSnakeNN();
 	
 
 	while (1)
 	{
-		//drawBoard();
-		loadBoardStateIntoInputNodes(0);
-		convertTest();
-		system("PAUSE");
-		updatePlayer();
-		updateAI();
+		vector<double> outputVals;
+
+		//only draw the board if the right key is down
+		if (GetKeyState(VK_RIGHT) & 0x8000)
+			drawBoard();
+
+
+		//check if the match is over
+		if (snakes.size() <= 1)
+		{
+			clearTheBoard();
+			createRandomSnakes(startingPlayerCount);
+
+			for (int i = 0; i < startingPlayerCount; i++)
+				randomlyCreateFood(100);
+		}
+
+		//start of input
+		for (int i = 0; i < snakes.size(); i++)
+		{
+			//load the board state into the QLearning NN
+			loadBoardStateIntoInputNodes(i);
+			//run the QLearning NN to get the rating of the 3 possible moves
+			snakeQNet->feedForward(inputVals);
+			//the rating of the 3 possible moves
+			snakeQNet->getResults(outputVals);
+
+			//save the 3 QLearning NN output values to be used in back propagation later
+			snakes.at(i)->at(0)->lastOutputValues.clear();
+			for (int f = 0; f < outputVals.size(); f++)
+				snakes.at(i)->at(0)->lastOutputValues.push_back(outputVals.at(f));
+
+
+
+			int2d moveDirection;
+			int moveSelected;
+
+
+			cout << "left\t\t" << outputVals.at(0) << endl;
+			cout << "straight\t" << outputVals.at(1) << endl;
+			cout << "right\t\t" << outputVals.at(2) << endl;
+
+			//risk is used to explore different paths
+			//it can lead to a smarter NN
+			//it is best to take risks at the start and stop taking them later
+			//that is were riskDecay comes in
+			if (rd() <= risk)
+			{
+				//add up all positive outputs
+				double totalOutput = 0.0;
+				totalOutput += outputVals.at(0) > 0.0 ? outputVals.at(0) : 0.0;
+				totalOutput += outputVals.at(1) > 0.0 ? outputVals.at(1) : 0.0;
+				totalOutput += outputVals.at(2) > 0.0 ? outputVals.at(2) : 0.0;
+				double randomPick = rd() * totalOutput;
+				
+				//randomize our moves
+				if (randomPick < outputVals.at(0))
+					//move left selected
+					moveSelected = -1;
+				else if (randomPick < outputVals.at(0) + outputVals.at(1))
+					//move straight selected
+					moveSelected = 0;
+				else
+					//move right selected
+					moveSelected = 1;
+			}
+			else
+			{
+				//safer move that is stronger
+				if ((outputVals.at(0) > outputVals.at(1)) && (outputVals.at(0) > outputVals.at(2)))
+					//0 is bigger
+					//move left selected
+					moveSelected = -1;
+				else
+				{
+					if (outputVals.at(1) > outputVals.at(2))
+						//1 is bigger
+						//move straight selected
+						moveSelected = 0;
+					else
+						//2 is bigger
+						//move right selected
+						moveSelected = 1;
+				}
+			}
+
+			//convert [-1:left],[0:straight],[1:right] into right,up,left,down
+			moveDirection = snakes.at(i)->at(0)->rotationMoveToDirection(moveSelected);
+
+			//riskier move that can lead to more learning
+			risk *= riskDecay;
+
+			//move the direction given by the QLearning NN
+			snakes.at(i)->at(0)->move(moveDirection);
+			//keep track of the QLearning NN Output Move we just did
+			snakes.at(i)->at(0)->lastMove = moveSelected;
+
+			
+			
+
+
+
+
+		}
+		//end of input
+
+
+
+
+		//convertTest();
+		
+		//showVectorVals("Outputs:", outputVals);
+
+		//system("PAUSE");
+
+
+			
+		
 		eatFoodUpdate();
 		removeAllEatenFood();
 		updateCollisions();
+
+		//snake's QLearning NN can not be punished after they die
+		//so a special case check has to happen here before they die
+		for (int i = 0; i < snakes.size(); i++)
+		{
+			vector<double> qMapPunishment;
+
+
+			if (snakes.at(i)->at(0)->isAboutToDie())
+			{
+				//this snake is about to die we must punish its QLearning NN for making this move
+
+				//set the output nodes to get ready for back propagation
+				for (int f = 0; f < 3; f++)
+				{
+					if (snakes.at(i)->at(0)->lastMove + 1 == f)
+					{
+						snakeQNet->m_layers.back().at(f).setOutputVal
+						(snakes.at(i)->at(0)->lastOutputValues.at(f));
+						qMapPunishment.push_back(0.0);
+					}
+					else
+					{
+						snakeQNet->m_layers.back().at(f).setOutputVal(0);
+						qMapPunishment.push_back(0.0);
+					}
+				}
+
+				//Update the NN QList by back propagating 
+				snakeQNet->backProp(qMapPunishment);
+			}
+		}
+
+		deathUpdate();
 		randomlyCreateFood(15);
 	}
 
