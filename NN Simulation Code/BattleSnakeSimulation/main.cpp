@@ -16,8 +16,8 @@ vector<unsigned> snakeQNetTopology;
 Net* snakeQNet;
 vector<double> inputVals;
 double future = 0.95;
-double risk = 0.3;
-double riskDecay = 0.999;
+double risk = 1.00;
+double riskDecay = 0.9999;
 
 
 ////////////////////
@@ -46,8 +46,8 @@ void setUpSnakeNN()
 	int inputNodeCount = 0;
 	//7 bits for each tile * 11 * 11 for the whole board
 	inputNodeCount += 7 * 11 * 11;
-	//8 special bits for each player
-	inputNodeCount += 8 * 8;
+	//9 special bits for each player
+	inputNodeCount += 9 * 8;
 
 	//for testing we will try out 1 hidden layer with the same amount of nodes as the input
 	int hiddenLayer1NodeCount = inputNodeCount;
@@ -244,6 +244,15 @@ void loadBoardStateIntoInputNodes(int player)
 		inputVals.push_back(0);
 		inputVals.push_back(0);
 	}
+
+	//1 bit for each player for their hunger level
+	for (f = 0; f < snakes.at(player)->size(); f++)
+	{
+		double curHungerPercent =((double) snakes.at(player)->at(0)->getHunger()) / ((double)maxHunger);
+		inputVals.push_back(curHungerPercent);
+	}
+	for (; f < maxPlayers; f++)
+		inputVals.push_back(0);
 	
 	//1 bit for each player		if their snake exists
 	for (f = 0; f < snakes.at(player)->size(); f++)
@@ -377,12 +386,12 @@ int main()
 		vector<double> outputVals;
 
 		//only draw the board if the right key is down
-		if (GetKeyState(VK_RIGHT) & 0x8000)
+		//if (GetKeyState(VK_RIGHT) & 0x8000)
 			drawBoard();
 
 
 		//check if the match is over
-		if (snakes.size() <= 1)
+		if ((snakes.size() <= 1))
 		{
 			clearTheBoard();
 			createRandomSnakes(startingPlayerCount);
@@ -391,6 +400,7 @@ int main()
 				randomlyCreateFood(100);
 		}
 
+		cout << "Risk: " << risk << endl;
 		//start of input
 		for (int i = 0; i < snakes.size(); i++)
 		{
@@ -400,6 +410,52 @@ int main()
 			snakeQNet->feedForward(inputVals);
 			//the rating of the 3 possible moves
 			snakeQNet->getResults(outputVals);
+
+			//outputVals								this frames q values
+			//snakes.at(i)->at(0)->lastOutputValues		last frames q values
+			//snakes.at(i)->at(0)->getRewards()
+			//blend2Numbers
+
+			int bestNewState;
+			if ((outputVals.at(0) > outputVals.at(1)) && (outputVals.at(0) > outputVals.at(2)))
+				//move left is best
+				bestNewState = 0;
+			else
+			{
+				if (outputVals.at(1) > outputVals.at(2))
+					//move straight is best
+					bestNewState = 1;
+				else
+					//move right is best
+					bestNewState = 2;
+			}
+
+			double oldStateQValue = future * blend2Numbers(outputVals.at(bestNewState), snakes.at(i)->at(0)->getRewards());
+			vector <double> qMapReward;
+			//set the output nodes to get ready for back propagation
+			for (int f = 0; f < 3; f++)
+			{
+				if (snakes.at(i)->at(0)->lastMove + 1 == f)
+				{
+					snakeQNet->m_layers.back().at(f).setOutputVal(snakes.at(i)->at(0)->lastOutputValues.at(f));
+					qMapReward.push_back(oldStateQValue);
+				}
+				else
+				{
+					snakeQNet->m_layers.back().at(f).setOutputVal(0.0);
+					qMapReward.push_back(0.0);
+				}
+			}
+
+			//Update the NN QList by back propagating 
+			snakeQNet->backProp(qMapReward);
+
+
+
+
+
+
+
 
 			//save the 3 QLearning NN output values to be used in back propagation later
 			snakes.at(i)->at(0)->lastOutputValues.clear();
@@ -466,22 +522,18 @@ int main()
 			//riskier move that can lead to more learning
 			risk *= riskDecay;
 
-			//move the direction given by the QLearning NN
-			snakes.at(i)->at(0)->move(moveDirection);
+			//set the move the direction given by the QLearning NN
+			snakes.at(i)->at(0)->nextMoveDirection = moveDirection;
 			//keep track of the QLearning NN Output Move we just did
 			snakes.at(i)->at(0)->lastMove = moveSelected;
-
-			
-			
-
-
-
-
 		}
 		//end of input
 
-
-
+		//move all of the snakes
+		for (int i = 0; i < snakes.size(); i++)
+		{
+			snakes.at(i)->at(0)->move();
+		}
 
 		//convertTest();
 		
@@ -512,13 +564,12 @@ int main()
 				{
 					if (snakes.at(i)->at(0)->lastMove + 1 == f)
 					{
-						snakeQNet->m_layers.back().at(f).setOutputVal
-						(snakes.at(i)->at(0)->lastOutputValues.at(f));
+						snakeQNet->m_layers.back().at(f).setOutputVal(snakes.at(i)->at(0)->lastOutputValues.at(f));
 						qMapPunishment.push_back(0.0);
 					}
 					else
 					{
-						snakeQNet->m_layers.back().at(f).setOutputVal(0);
+						snakeQNet->m_layers.back().at(f).setOutputVal(0.0);
 						qMapPunishment.push_back(0.0);
 					}
 				}

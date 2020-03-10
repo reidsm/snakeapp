@@ -39,6 +39,7 @@ const int maxPlayers = 8;
 const int startingPlayerCount = 8;
 int2d spawnPositions[maxPlayers];
 HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+const int maxHunger = 100;
 
 
 ////////////////////
@@ -83,11 +84,16 @@ private:
 	bool firstMove;
 	int size;
 	bool aboutToDie;
-	
+	int hunger;
 
 public:
 	vector<double> lastOutputValues;
 	int lastMove;
+	int2d nextMoveDirection;
+	vector<double> rewards;
+
+
+
 
 public:
 	Snake(int2d spawn) {
@@ -97,8 +103,44 @@ public:
 		lastMoveDirection = { 1,0 };
 		firstMove = true;
 		aboutToDie = false;
+		lastMove = -100;
+		nextMoveDirection = { 1,0 };
+		hunger = maxHunger;
 	}
 
+
+	void addReward(double rewardAmount)
+	{
+		rewards.push_back(rewardAmount);
+	}
+
+
+	double getRewards()
+	{
+		double rewardTotal = 1.0;
+
+
+		for (int i = 0;i<rewards.size();i++)
+		{
+			rewards.at(i) = 1.0 - rewards.at(i);
+		}
+
+		for (int i = 0; i < rewards.size(); i++)
+		{
+			rewardTotal *= rewards.at(i);
+		}
+
+		rewardTotal = 1.0 - rewardTotal;
+		rewards.clear();
+
+		return rewardTotal;
+	}
+
+
+	int getHunger()
+	{
+		return hunger;
+	}
 
 
 	int2d rotationMoveToDirection(int rotation)
@@ -217,22 +259,22 @@ public:
 	}
 
 
-	void move(int2d offset)
+	void move()
 	{
 		//check if the snake is trying to move backwards
-		if ((offset.x == -lastMoveDirection.x) && (offset.y == -lastMoveDirection.y) && (!firstMove))
+		if ((nextMoveDirection.x == -lastMoveDirection.x) && (nextMoveDirection.y == -lastMoveDirection.y) && (!firstMove))
 		{
-			offset = lastMoveDirection;
+			nextMoveDirection = lastMoveDirection;
 		}
 		firstMove = false;
 
 		//keep track of this move
-		lastMoveDirection = offset;
+		lastMoveDirection = nextMoveDirection;
 
 		//move the snake forward with the tail following
 		int2d previousLocation;
-		previousLocation.x = body.at(0).x + offset.x;
-		previousLocation.y = body.at(0).y + offset.y;
+		previousLocation.x = body.at(0).x + nextMoveDirection.x;
+		previousLocation.y = body.at(0).y + nextMoveDirection.y;
 		for (unsigned int i = 0; i < body.size(); i++)
 		{
 			int2d currentLocation = body.at(i);
@@ -245,6 +287,11 @@ public:
 			body.push_back(previousLocation);
 			insideFood--;
 		}
+
+		//hunger check
+		hunger--;
+		if (hunger <= 0)
+			setToDie();
 	}
 
 
@@ -264,6 +311,10 @@ public:
 				foodVector.at(i)->eatFood();
 				size++;
 				insideFood++;
+				hunger = maxHunger;
+
+				//REWARD
+				addReward(0.75);
 			}
 		}
 	}
@@ -272,6 +323,33 @@ public:
 	void setToDie()
 	{
 		aboutToDie = true;
+
+		//REWARD
+		//every other snake that is alive
+		for (int i = 0; i < snakes.size(); i++)
+		{
+			//no rewards for this dead af snake
+			if (this != snakes.at(i)->at(0))
+			{
+				double rewardAmount = 1;
+
+				if (snakes.size() == 2)
+					rewardAmount = 1.00;
+				if (snakes.size() == 3)
+					rewardAmount = 0.95;
+				if (snakes.size() == 4)
+					rewardAmount = 0.90;
+				if (snakes.size() == 5)
+					rewardAmount = 0.80;
+				if (snakes.size() == 6)
+					rewardAmount = 0.70;
+				if (snakes.size() == 7)
+					rewardAmount = 0.60;
+
+				//addReward(rewardAmount);
+			}
+		}
+		
 	}
 
 
@@ -390,6 +468,11 @@ public:
 ////////////////////
 //Functions
 ////////////////////
+double blend2Numbers(double n1, double n2)
+{
+	return 1 - (1 - n1) * (1 - n2);
+}
+
 void drawBoard()
 {
 	system("CLS");

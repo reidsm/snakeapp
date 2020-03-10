@@ -4,7 +4,7 @@ C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\Ba
 C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\BattleSnakeSimulation\NN.h(205,46): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
 C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\BattleSnakeSimulation\NN.h(212,46): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
 C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\BattleSnakeSimulation\NN.h(238,38): warning C4267: 'initializing': conversion from 'size_t' to 'unsigned int', possible loss of data
-C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\BattleSnakeSimulation\Snake.h(481,6): warning C4101: 'newSpawn': unreferenced local variable
-C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\BattleSnakeSimulation\Snake.h(482,8): warning C4101: 'newSpawnPosition': unreferenced local variable
-C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\BattleSnakeSimulation\Snake.h(483,7): warning C4101: 'spotTaken': unreferenced local variable
+C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\BattleSnakeSimulation\Snake.h(564,6): warning C4101: 'newSpawn': unreferenced local variable
+C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\BattleSnakeSimulation\Snake.h(565,8): warning C4101: 'newSpawnPosition': unreferenced local variable
+C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\BattleSnakeSimulation\Snake.h(566,7): warning C4101: 'spotTaken': unreferenced local variable
   BattleSnakeSimulation.vcxproj -> C:\Users\vivid\source\repos\BattleSnakeSimulation\snakeapp\NN Simulation Code\x64\Debug\BattleSnakeSimulation.exe

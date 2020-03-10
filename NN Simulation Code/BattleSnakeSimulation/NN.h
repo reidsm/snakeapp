@@ -99,7 +99,7 @@ private:
 	static double alpha;
 	static double transferFunction(double x);
 	static double transferFunctionDerivative(double x);
-	static double randomWeight(void) { return (rand() / double(RAND_MAX))/200.0; }
+	static double randomWeight(void) { return (rand() / double(RAND_MAX))/300.0; }
 	double sumDOW(const Layer& nextLayer) const;
 	double m_outputVal;
 	vector<Connection> m_outputWeights;
@@ -107,8 +107,8 @@ private:
 	double m_gradient;
 };
 
-double Neuron::eta = 0.15;
-double Neuron::alpha = 0.5;
+double Neuron::eta = 0.15/20;
+double Neuron::alpha = 0.5/20;
 
 void Neuron::updateInputWeights(Layer& prevLayer) {
 	for (unsigned n = 0; n < prevLayer.size(); ++n) {
