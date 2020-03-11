@@ -1,14 +1,16 @@
 /**
 	TODO:
-	
+
 
 **/
-
 #include "NN.h"
 #include "Snake.h"
 #include <cstdlib>
 #include <functional>
 #include <random>
+
+//For saveToFile() and loadFromFile()
+#define _CRT_SECURE_NO_DEPRECATE
 
 
 //our snakes NN
@@ -19,7 +21,8 @@ double future = 0.95;
 double risk = 1.00;
 double riskDecay = 0.9999;
 
-
+void loadFromFile();
+void saveToFile();
 ////////////////////
 //NODES:
 ////////////////////
@@ -65,10 +68,10 @@ void setUpSnakeNN()
 void loadBoardStateIntoInputNodes(int player)
 {
 	inputVals.clear();
-	
+
 	//loop through all of the board locations
 	int2d cBL;
-	for (cBL.y=0; cBL.y < boardSize.y; cBL.y++)
+	for (cBL.y = 0; cBL.y < boardSize.y; cBL.y++)
 	{
 		for (cBL.x = 0; cBL.x < boardSize.x; cBL.x++)
 		{
@@ -209,14 +212,14 @@ void loadBoardStateIntoInputNodes(int player)
 	for (f = 0; f < snakes.at(player)->size(); f++)
 	{
 		int currentFood = snakes.at(player)->at(f)->getInsideFood();
-		if(currentFood>0)
+		if (currentFood > 0)
 			inputVals.push_back(1);
 		else
 			inputVals.push_back(0);
 	}
-	for(;f< maxPlayers;f++)
+	for (; f < maxPlayers; f++)
 		inputVals.push_back(0);
-	
+
 	//6bits for each player		the size of each player's snake
 	for (f = 0; f < snakes.at(player)->size(); f++)
 	{
@@ -248,15 +251,15 @@ void loadBoardStateIntoInputNodes(int player)
 	//1 bit for each player for their hunger level
 	for (f = 0; f < snakes.at(player)->size(); f++)
 	{
-		double curHungerPercent =((double) snakes.at(player)->at(0)->getHunger()) / ((double)maxHunger);
+		double curHungerPercent = ((double)snakes.at(player)->at(0)->getHunger()) / ((double)maxHunger);
 		inputVals.push_back(curHungerPercent);
 	}
 	for (; f < maxPlayers; f++)
 		inputVals.push_back(0);
-	
+
 	//1 bit for each player		if their snake exists
 	for (f = 0; f < snakes.at(player)->size(); f++)
-			inputVals.push_back(1);
+		inputVals.push_back(1);
 	for (; f < maxPlayers; f++)
 		inputVals.push_back(0);
 }
@@ -284,7 +287,7 @@ void convertTest()
 		{
 			for (int i = 0; i < 7; i++)
 			{
-				current[i] = inputVals.at((y*11*7 + x * 7 + i));
+				current[i] = inputVals.at((y * 11 * 7 + x * 7 + i));
 			}
 
 			if ((current[0] == 0) && (current[1] == 0) && (current[2] == 1) && (current[3] == 1))
@@ -320,7 +323,7 @@ void convertTest()
 		}
 		cout << endl;
 	}
-	for(int i=0;i<10;i++)
+	for (int i = 0; i < 10; i++)
 		cout << endl;
 	inputVals.clear();
 }
@@ -370,7 +373,7 @@ int main()
 	snakeQNet.backProp(targetVals);
 	*/
 
-	
+
 	SetSpawn();
 	createRandomSnakes(startingPlayerCount);
 
@@ -379,7 +382,8 @@ int main()
 
 	//setup the NN
 	setUpSnakeNN();
-	
+
+
 
 	while (1)
 	{
@@ -387,7 +391,14 @@ int main()
 
 		//only draw the board if the right key is down
 		//if (GetKeyState(VK_RIGHT) & 0x8000)
-			drawBoard();
+		drawBoard();
+
+		//only write to file if the up key is down
+		//if (GetKeyState(VK_UP) & 0x8000)
+		loadFromFile();
+		{
+			saveToFile();
+		}
 
 
 		//check if the match is over
@@ -484,7 +495,7 @@ int main()
 				totalOutput += outputVals.at(1) > 0.0 ? outputVals.at(1) : 0.0;
 				totalOutput += outputVals.at(2) > 0.0 ? outputVals.at(2) : 0.0;
 				double randomPick = rd() * totalOutput;
-				
+
 				//randomize our moves
 				if (randomPick < outputVals.at(0))
 					//move left selected
@@ -536,14 +547,14 @@ int main()
 		}
 
 		//convertTest();
-		
+
 		//showVectorVals("Outputs:", outputVals);
 
 		//system("PAUSE");
 
 
-			
-		
+
+
 		eatFoodUpdate();
 		removeAllEatenFood();
 		updateCollisions();
@@ -584,4 +595,77 @@ int main()
 	}
 
 	system("PAUSE");
+}
+
+
+void loadFromFile()
+{
+	std::ifstream inFile;
+	inFile.open("cout.txt");
+	if (!inFile) {
+		cout << "Unable to open file";
+		exit(1); // terminate with error
+	}
+
+
+	char c;
+	while (inFile.get(c))                  // loop getting single characters
+		cout << c;
+
+
+	//while (!inFile.eof()) {
+	//	std::cout << inFile;
+	//}
+
+
+
+	inFile.close();
+}
+
+
+void saveToFile()
+{
+
+	fstream file;
+
+	file.open("cout.txt", ios::out);
+
+	// Backup streambuffers of  cout 
+	streambuf* stream_buffer_cout = cout.rdbuf();
+	streambuf* stream_buffer_cin = cin.rdbuf();
+
+	// Get the streambuffer of the file 
+	streambuf* stream_buffer_file = file.rdbuf();
+
+	// Redirect cout to file 
+	cout.rdbuf(stream_buffer_file);
+
+
+	//output the 3 layer sizes
+	for (int i = 0; i < snakeQNet->m_layers.size(); i++)
+	{
+		cout << snakeQNet->m_layers.at(i).size() << " ";
+	}
+
+	cout << endl;
+
+	system("PAUSE");
+
+	//loop through all the layers
+	for (int i = 0; i < snakeQNet->m_layers.size(); i++)
+	{
+		//loop through all of the neurons
+		for (int j = 0; j < snakeQNet->m_layers.at(i).size(); j++)
+		{
+			for (int z = 0; z < snakeQNet->m_layers.at(i).at(j).m_outputWeights.size(); z++)
+				cout << snakeQNet->m_layers.at(i).at(j).m_outputWeights.at(z).weight << endl;
+		}
+	}
+
+	// Redirect cout from file back to cout
+	cout.rdbuf(stream_buffer_cout);
+	cout << "Writing to File finished";
+
+	system("PAUSE");
+
 }

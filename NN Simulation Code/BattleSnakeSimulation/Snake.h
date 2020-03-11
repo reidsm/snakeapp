@@ -32,7 +32,7 @@ bool isSpotTaken(int2d location);
 ////////////////////
 //globals
 ////////////////////
-const int2d boardSize = {11,11};
+const int2d boardSize = { 11,11 };
 vector<vector<Snake*>*> snakes;
 vector<Food*> foodVector;
 const int maxPlayers = 8;
@@ -120,7 +120,7 @@ public:
 		double rewardTotal = 1.0;
 
 
-		for (int i = 0;i<rewards.size();i++)
+		for (int i = 0; i < rewards.size(); i++)
 		{
 			rewards.at(i) = 1.0 - rewards.at(i);
 		}
@@ -249,10 +249,10 @@ public:
 	{
 		for (unsigned int i = 0; i < body.size(); i++)
 		{
-			if((body.at(i).x== bodyPart.x)&& (body.at(i).y == bodyPart.y))
+			if ((body.at(i).x == bodyPart.x) && (body.at(i).y == bodyPart.y))
 				return { body.at(i - 1).x - body.at(i).x,body.at(i - 1).y - body.at(i).y };
 		}
-		
+
 		//ERROR
 		throw ERROR;
 		return { 0,0 };
@@ -349,7 +349,7 @@ public:
 				//addReward(rewardAmount);
 			}
 		}
-		
+
 	}
 
 
@@ -580,7 +580,7 @@ void createRandomSnakes(int count)
 	//add the rest of the snakes to each snake vector
 	for (int i = 0; i < count; i++)
 	{
-		random_shuffle(std::begin(newSnakes), std::begin(newSnakes)+count);
+		random_shuffle(std::begin(newSnakes), std::begin(newSnakes) + count);
 		for (int f = 0; f < count; f++)
 		{
 			if (snakes.at(i)->at(0) != newSnakes[f])
@@ -597,7 +597,7 @@ void clearTheBoard()
 	for (int i = 0; i < foodVector.size(); i++)
 	{
 		delete foodVector.at(i);
-	} 
+	}
 	foodVector.clear();
 
 	//clear all of the snakes
@@ -614,7 +614,7 @@ void clearTheBoard()
 
 bool isSpotTaken(int2d location)
 {
-	if(snakes.size()>0)
+	if (snakes.size() > 0)
 		for (unsigned int i = 0; i < snakes.size(); i++)
 		{
 			if (snakes.at(0)->at(i)->bodyPartAtLocation(location))
@@ -685,11 +685,11 @@ void deathUpdate()
 
 void eatFoodUpdate()
 {
-	if(snakes.size()>0)
-	for (unsigned int i = 0; i < snakes.at(0)->size(); i++)
-	{
-		snakes.at(0)->at(i)->eatFood();
-	}
+	if (snakes.size() > 0)
+		for (unsigned int i = 0; i < snakes.at(0)->size(); i++)
+		{
+			snakes.at(0)->at(i)->eatFood();
+		}
 }
 
 

@@ -83,7 +83,7 @@ struct Connection {
 
 class Neuron;
 
-typedef vector<Neuron> Layer;
+typedef vector<Neuron> Layer;/////////////////save this into a file
 
 class Neuron {
 public:
@@ -99,16 +99,21 @@ private:
 	static double alpha;
 	static double transferFunction(double x);
 	static double transferFunctionDerivative(double x);
-	static double randomWeight(void) { return (rand() / double(RAND_MAX))/300.0; }
+	static double randomWeight(void) { return (rand() / double(RAND_MAX)) / 300.0; }
 	double sumDOW(const Layer& nextLayer) const;
 	double m_outputVal;
-	vector<Connection> m_outputWeights;
+	
+
 	unsigned m_myIndex;
 	double m_gradient;
+
+
+public:
+	vector<Connection> m_outputWeights;///////////////////save these into a file
 };
 
-double Neuron::eta = 0.15/20;
-double Neuron::alpha = 0.5/20;
+double Neuron::eta = 0.15 / 20;
+double Neuron::alpha = 0.5 / 20;
 
 void Neuron::updateInputWeights(Layer& prevLayer) {
 	for (unsigned n = 0; n < prevLayer.size(); ++n) {
@@ -117,6 +122,7 @@ void Neuron::updateInputWeights(Layer& prevLayer) {
 		double newDeltaWeight = eta * neuron.getOutputVal() * m_gradient + alpha * oldDeltaWeight;
 		neuron.m_outputWeights[m_myIndex].deltaWeight = newDeltaWeight;
 		neuron.m_outputWeights[m_myIndex].weight += newDeltaWeight;
+
 	}
 }
 
@@ -176,7 +182,7 @@ private:
 	static double m_recentAverageSmoothingFactor;
 
 public:
-	vector<Layer> m_layers;
+	vector<Layer> m_layers;//save this into a file.
 };
 
 double Net::m_recentAverageSmoothingFactor = 100.0;
@@ -287,6 +293,9 @@ void createTrainingData()
 
 	trainFile.close();
 }
+
+
+
 
 /*
 int main() {
