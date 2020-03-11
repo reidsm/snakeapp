@@ -1,6 +1,6 @@
 /**
 	TODO:
-	
+
 
 **/
 
@@ -65,10 +65,10 @@ void setUpSnakeNN()
 void loadBoardStateIntoInputNodes(int player)
 {
 	inputVals.clear();
-	
+
 	//loop through all of the board locations
 	int2d cBL;
-	for (cBL.y=0; cBL.y < boardSize.y; cBL.y++)
+	for (cBL.y = 0; cBL.y < boardSize.y; cBL.y++)
 	{
 		for (cBL.x = 0; cBL.x < boardSize.x; cBL.x++)
 		{
@@ -79,13 +79,13 @@ void loadBoardStateIntoInputNodes(int player)
 				if (foodVector.at(i)->isAtPosition(cBL))
 				{
 					//0011000	Food
-					inputVals.push_back(-1.0);
-					inputVals.push_back(-1.0);
-					inputVals.push_back(1.0);
-					inputVals.push_back(1.0);
-					inputVals.push_back(-1.0);
-					inputVals.push_back(-1.0);
-					inputVals.push_back(-1.0);
+					inputVals.push_back(0);
+					inputVals.push_back(0);
+					inputVals.push_back(1);
+					inputVals.push_back(1);
+					inputVals.push_back(0);
+					inputVals.push_back(0);
+					inputVals.push_back(0);
 					inputPushed = true;
 					break;
 				}
@@ -99,11 +99,8 @@ void loadBoardStateIntoInputNodes(int player)
 					//get the player number of the snake
 					//xxxx%%%	Player Number
 					double player4bit = i / 4;
-					player4bit = player4bit / 2.0 - 1.0;
 					double player2bit = (i & 2) / 2;
-					player2bit = player2bit / 2.0 - 1.0;
 					double player1bit = i % 2;
-					player1bit = player1bit / 2.0 - 1.0;
 
 					//0100xxx	Head
 					//10xxxxx	Tail
@@ -129,49 +126,49 @@ void loadBoardStateIntoInputNodes(int player)
 						if (bodyDirection.x == 1)
 						{
 							//xx11xxx	Body Moving Right
-							bodyMoving2b = 1.0;
-							bodyMoving1b = 1.0;
+							bodyMoving2b = 1;
+							bodyMoving1b = 1;
 						}
 						else if (bodyDirection.x == -1)
 						{
 							//xx10xxx	Body Moving Left
-							bodyMoving2b = 1.0;
-							bodyMoving1b = -1.0;
+							bodyMoving2b = 1;
+							bodyMoving1b = 0;
 						}
 						else if (bodyDirection.y == 1)
 						{
 							//xx00xxx	Body Moving Down
-							bodyMoving2b = -1.0;
-							bodyMoving1b = -1.0;
+							bodyMoving2b = 0;
+							bodyMoving1b = 0;
 						}
 						else
 						{
 							//xx01xxx	Body Moving Up
-							bodyMoving2b = -1.0;
-							bodyMoving1b = 1.0;
+							bodyMoving2b = 0;
+							bodyMoving1b = 1;
 						}
 
 						//determine if this tile holds a tail or a normal body part
 						if (snakes.at(player)->at(i)->isEndOfTail(cBL))
 						{
 							//10xxxxx	Tail
-							special2b = 1.0;
-							special1b = -1.0;
+							special2b = 1;
+							special1b = 0;
 						}
 						else
 						{
 							//00		Body Part
-							special2b = 1.0;
-							special1b = 1.0;
+							special2b = 1;
+							special1b = 1;
 						}
 					}
 					else if (snakePart == 2)
 					{
 						//0100xxx	Head
-						special2b = -1.0;
-						special1b = 1.0;
-						bodyMoving2b = -1.0;
-						bodyMoving1b = -1.0;
+						special2b = 0;
+						special1b = 1;
+						bodyMoving2b = 0;
+						bodyMoving1b = 0;
 					}
 
 					//a snake was found
@@ -193,13 +190,13 @@ void loadBoardStateIntoInputNodes(int player)
 			{
 				//nothing is found so the tile must be blank
 				//0000000	Blank
-				inputVals.push_back(-1.0);
-				inputVals.push_back(-1.0);
-				inputVals.push_back(-1.0);
-				inputVals.push_back(-1.0);
-				inputVals.push_back(-1.0);
-				inputVals.push_back(-1.0);
-				inputVals.push_back(-1.0);
+				inputVals.push_back(0);
+				inputVals.push_back(0);
+				inputVals.push_back(0);
+				inputVals.push_back(0);
+				inputVals.push_back(0);
+				inputVals.push_back(0);
+				inputVals.push_back(0);
 			}
 		}
 	}
@@ -212,30 +209,24 @@ void loadBoardStateIntoInputNodes(int player)
 	for (f = 0; f < snakes.at(player)->size(); f++)
 	{
 		int currentFood = snakes.at(player)->at(f)->getInsideFood();
-		if(currentFood>0)
-			inputVals.push_back(1.0);
+		if (currentFood > 0)
+			inputVals.push_back(1);
 		else
-			inputVals.push_back(-1.0);
+			inputVals.push_back(0);
 	}
-	for(;f< maxPlayers;f++)
-		inputVals.push_back(-1.0);
-	
+	for (; f < maxPlayers; f++)
+		inputVals.push_back(0);
+
 	//6bits for each player		the size of each player's snake
 	for (f = 0; f < snakes.at(player)->size(); f++)
 	{
 		int currentSize = snakes.at(player)->at(f)->getBodyLength();
 		double sizeB32 = (currentSize & 32) / 32;
-		sizeB32 = sizeB32 * 2.0 - 1.0;
 		double sizeB16 = (currentSize & 16) / 16;
-		sizeB16 = sizeB32 * 2.0 - 1.0;
 		double sizeB08 = (currentSize & 8) / 8;
-		sizeB08 = sizeB08 * 2.0 - 1.0;
 		double sizeB04 = (currentSize & 4) / 4;
-		sizeB04 = sizeB04 * 2.0 - 1.0;
 		double sizeB02 = (currentSize & 2) / 2;
-		sizeB02 = sizeB02 * 2.0 - 1.0;
 		double sizeB01 = (currentSize & 1) / 1;
-		sizeB01 = sizeB01 * 2.0 - 1.0;
 
 		inputVals.push_back(sizeB32);
 		inputVals.push_back(sizeB16);
@@ -246,29 +237,28 @@ void loadBoardStateIntoInputNodes(int player)
 	}
 	for (; f < maxPlayers; f++)
 	{
-		inputVals.push_back(-1.0);
-		inputVals.push_back(-1.0);
-		inputVals.push_back(-1.0);
-		inputVals.push_back(-1.0);
-		inputVals.push_back(-1.0);
-		inputVals.push_back(-1.0);
+		inputVals.push_back(0);
+		inputVals.push_back(0);
+		inputVals.push_back(0);
+		inputVals.push_back(0);
+		inputVals.push_back(0);
+		inputVals.push_back(0);
 	}
 
 	//1 bit for each player for their hunger level
 	for (f = 0; f < snakes.at(player)->size(); f++)
 	{
-		double curHungerPercent =((double) snakes.at(player)->at(0)->getHunger()) / ((double)maxHunger);
-		curHungerPercent = curHungerPercent * 2.0 - 1.0;
+		double curHungerPercent = ((double)snakes.at(player)->at(0)->getHunger()) / ((double)maxHunger);
 		inputVals.push_back(curHungerPercent);
 	}
 	for (; f < maxPlayers; f++)
-		inputVals.push_back(-1.0);
-	
+		inputVals.push_back(0);
+
 	//1 bit for each player		if their snake exists
 	for (f = 0; f < snakes.at(player)->size(); f++)
-			inputVals.push_back(1.0);
+		inputVals.push_back(1);
 	for (; f < maxPlayers; f++)
-		inputVals.push_back(-1.0);
+		inputVals.push_back(0);
 }
 
 
@@ -294,7 +284,7 @@ void convertTest()
 		{
 			for (int i = 0; i < 7; i++)
 			{
-				current[i] = inputVals.at((y*11*7 + x * 7 + i));
+				current[i] = inputVals.at((y * 11 * 7 + x * 7 + i));
 			}
 
 			if ((current[0] == 0) && (current[1] == 0) && (current[2] == 1) && (current[3] == 1))
@@ -330,7 +320,7 @@ void convertTest()
 		}
 		cout << endl;
 	}
-	for(int i=0;i<10;i++)
+	for (int i = 0; i < 10; i++)
 		cout << endl;
 	inputVals.clear();
 }
@@ -380,7 +370,7 @@ int main()
 	snakeQNet.backProp(targetVals);
 	*/
 
-	
+
 	SetSpawn();
 	createRandomSnakes(startingPlayerCount);
 
@@ -389,7 +379,7 @@ int main()
 
 	//setup the NN
 	setUpSnakeNN();
-	
+
 
 	while (1)
 	{
@@ -397,7 +387,7 @@ int main()
 
 		//only draw the board if the right key is down
 		//if (GetKeyState(VK_RIGHT) & 0x8000)
-			drawBoard();
+		drawBoard();
 
 
 		//check if the match is over
@@ -489,9 +479,13 @@ int main()
 			if (rd() <= risk)
 			{
 				//add up all positive outputs
-				double totalOutput = outputVals.at(0) + outputVals.at(1) + outputVals.at(2) + 3.0;
+				double totalOutput = 0.0;
+				totalOutput += outputVals.at(0);
+				totalOutput += outputVals.at(1);
+				totalOutput += outputVals.at(2);
+				totalOutput += 3.0;
 				double randomPick = rd() * totalOutput;
-				
+
 				//randomize our moves
 				if (randomPick < outputVals.at(0) + 1.0)
 					//move left selected
@@ -543,14 +537,14 @@ int main()
 		}
 
 		//convertTest();
-		
+
 		//showVectorVals("Outputs:", outputVals);
 
 		//system("PAUSE");
 
 
-			
-		
+
+
 		eatFoodUpdate();
 		removeAllEatenFood();
 		updateCollisions();

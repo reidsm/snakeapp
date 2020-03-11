@@ -480,7 +480,8 @@ double blend2Numbers(double n1, double n2)
 	double tn1 = (n1 + 1.0) / 2.0;
 	double tn2 = (n2 + 1.0) / 2.0;
 	double blend = 1 - (1 - tn1) * (1 - tn2);
-	double adjustBack = blend * 2.0 + 1.0;
+	double adjustBack = blend * 2.0 - 1.0;
+	cout << adjustBack << endl;
 	return adjustBack;
 }
 
